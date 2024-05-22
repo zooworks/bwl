@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Crypto Price Gap Visualization</title>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<canvas id="cryptoChart"></canvas>
+<script>
+   const ctx = document.getElementById('cryptoChart').getContext('2d');
+   const cryptoChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+         labels: [], // x-axis labels (timestamps)
+         datasets: [{
+            label: 'Commex Bid Price',
+            borderColor: 'rgb(255, 99, 132)',
+            data: [],
+            yAxisID: 'y'
+         }, {
+            label: 'Binance Mark Price',
+            borderColor: 'rgb(54, 162, 235)',
+            data: [],
+            yAxisID: 'y'
+
+         }, {
+            label: 'Price Gap Percentage',
+            borderColor: 'rgb(75, 192, 192)',
+            data: [],
+            fill: false, // Do not fill under the line
+            yAxisID: 'y1'
+
+         }]
+      },
+      options: {
+         scales: {
+            y: { // y-axis for prices
+               beginAtZero: false,
+            },
+         }
+      }
+   });
+
+   const ws = new WebSocket('ws://localhost:8080');
+   ws.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const now = new Date().toLocaleTimeString();
+
+      cryptoChart.data.labels.push(now);
+      cryptoChart.data.datasets[0].data.push(data.commexPrice);
+      cryptoChart.data.datasets[1].data.push(data.binancePrice);
+      cryptoChart.data.datasets[2].data.push(data.gapPercentage);
+
+      if (cryptoChart.data.labels.length > 100) { // Keep last 60 data points
+         cryptoChart.data.labels.shift();
+         cryptoChart.data.datasets.forEach((dataset) => dataset.data.shift());
+      }
+
+      cryptoChart.update();
+   };
+
+   // Handle any errors that occur with the WebSocket connection
+   ws.onerror = function(error) {
+      console.error('WebSocket Error:', error);
+   };
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!--바이낸스와 커맥스의 갭차트를 보여주는 그래프-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Price Gap Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js 라이브러리 포함 -->
+</head>
+<body>
+    <canvas id="priceGapChart"></canvas> <!-- 차트를 그릴 캔버스 -->
+    <script>
+        const ctx = document.getElementById('priceGapChart').getContext('2d');
+        const priceGapChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // x축 데이터
+                datasets: [{
+                    label: 'Price Gap (%)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: [] // y축 데이터
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const ws = new WebSocket('ws://localhost:8080'); // 서버의 WebSocket 주소
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const now = new Date().toLocaleTimeString();
+
+            // 차트에 데이터 추가
+            if (priceGapChart.data.labels.length > 20) { // 데이터가 20개 이상이면 오래된 데이터 삭제
+                priceGapChart.data.labels.shift();
+                priceGapChart.data.datasets[0].data.shift();
+            }
+
+            priceGapChart.data.labels.push(now);
+            priceGapChart.data.datasets[0].data.push(data.gapPercentage);
+
+            priceGapChart.update();
+        };
+    </script>
+</body>
+</html>
